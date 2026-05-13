@@ -270,7 +270,59 @@ function render(){
             options:{
                 animation:false,
                 interaction:{intersect:false},
-                scales:{y:{beginAtZero:false}},
+
+                plugins:{
+                    tooltip:{
+                        callbacks:{
+                            label(ctx){
+
+                                const year = parseInt(
+                                    ctx.label
+                                );
+
+                                const value =
+                                    Math.round(ctx.parsed.y);
+
+                                let stored = false;
+
+                                if(
+                                    ctx.datasetIndex === 0 &&
+                                    state.balanceActuals[year] != null
+                                ){
+                                    stored = true;
+                                }
+
+                                if(
+                                    ctx.datasetIndex === 1 &&
+                                    state.salaryAdjustments[year] != null
+                                ){
+                                    stored = true;
+                                }
+
+                                if(
+                                    ctx.datasetIndex === 2 &&
+                                    state.spendingAdjustments[year] != null
+                                ){
+                                    stored = true;
+                                }
+
+                                let text =
+                                    `${ctx.dataset.label}: ${value}`;
+
+                                if(stored){
+                                    return [ text, " — option-click to remove" ];
+                                }
+
+                                return text;
+                            }
+                        }
+                    }
+                },
+
+                scales:{
+                    y:{beginAtZero:false}
+                },
+
                 responsive:true,
                 maintainAspectRatio:false
             }
@@ -284,7 +336,7 @@ function render(){
                 return;
 
             deathDismissed = !deathDismissed;
-        
+
             document
                 .getElementById("death")
                 .classList.toggle("dismissed", deathDismissed);
