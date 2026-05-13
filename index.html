@@ -216,6 +216,9 @@ function build() {
         if(state.spendingAdjustments[year] != null)
             spend = state.spendingAdjustments[year];
 
+        if(state.plannedExpenses[year] != null)
+            balance -= state.plannedExpenses[year];
+
         balance = balance*(1+state.returnRate/100)
                 + salary - spend;
 
@@ -321,7 +324,10 @@ function hook(){
         if(!drag) return;
 
         const rect = c.getBoundingClientRect();
-        const yv = Math.round(chart.scales.y.getValueForPixel(e.clientY-rect.top));
+        let yv = Math.round(chart.scales.y.getValueForPixel(e.clientY-rect.top));
+        if (e.shiftKey) {
+            yv = Math.round(yv / 100) * 100;
+        }
 
         const ds = chart.data.datasets[drag.datasetIndex];
         const label = chart.data.labels[drag.index];
@@ -354,7 +360,8 @@ const DEFAULT_STATE = {
     startingSpending:25000,
     salaryAdjustments:{},
     spendingAdjustments:{},
-    balanceActuals:{}
+    balanceActuals:{},
+    plannedExpenses:{}
 };
 
 let state = structuredClone(DEFAULT_STATE);
