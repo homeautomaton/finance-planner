@@ -172,21 +172,6 @@ canvas {
 
 const DEBT_LIMIT = -1000000;
 
-let state = {
-    presentYear: new Date().getFullYear(),
-    startingBalance:10000,
-    birthYear:2001,
-    years:30,
-    returnRate:3,
-    inflationRate:3,
-    raiseRate:3,
-    startingSalary:30000,
-    startingSpending:25000,
-    salaryAdjustments:{},   // YEAR KEYED
-    spendingAdjustments:{}, // YEAR KEYED
-    balanceActuals:{}       // YEAR KEYED
-};
-
 let chart;
 let drag = null;
 let freezeScale = false;
@@ -322,7 +307,7 @@ function hook(){
         if(!drag) return;
 
         const rect = c.getBoundingClientRect();
-        const yv = chart.scales.y.getValueForPixel(e.clientY-rect.top);
+        const yv = Math.round(chart.scales.y.getValueForPixel(e.clientY-rect.top));
 
         const ds = chart.data.datasets[drag.datasetIndex];
         const label = chart.data.labels[drag.index];
@@ -334,18 +319,72 @@ function hook(){
             state.balanceActuals[year]=yv;
 
         if(drag.datasetIndex===1)
-            state.salaryAdjustments[year]=yv;
+            state.salaryAdjustments[year]=Math.max(yv,0);
 
         if(drag.datasetIndex===2)
-            state.spendingAdjustments[year]=yv;
+            state.spendingAdjustments[year]=Math.max(yv,0);
 
         chart.update("none");
     };
 }
 
+//function loadJSON(){ state = JSON.parse(json.value); render(); }
+
+const DEFAULT_STATE = {
+    presentYear: new Date().getFullYear(),
+    startingBalance:10000,
+    birthYear:2001,
+    years:30,
+    returnRate:3,
+    inflationRate:3,
+    raiseRate:3,
+    startingSalary:30000,
+    startingSpending:25000,
+    salaryAdjustments:{},
+    spendingAdjustments:{},
+    balanceActuals:{}
+};
+
+let state = structuredClone(DEFAULT_STATE);
+
+function syncInputsFromState(){
+
+    document.getElementById("startingBalance").value = state.startingBalance;
+    document.getElementById("birthYear").value = state.birthYear;
+    document.getElementById("years").value = state.years;
+    document.getElementById("returnRate").value = state.returnRate;
+    document.getElementById("inflationRate").value = state.inflationRate;
+    document.getElementById("raiseRate").value = state.raiseRate;
+    document.getElementById("startingSalary").value = state.startingSalary;
+    document.getElementById("startingSpending").value = state.startingSpending;
+}
+
 function loadJSON(){
-    state = JSON.parse(json.value);
-    render();
+
+    try {
+
+        const loaded = JSON.parse(
+            document.getElementById("json").value
+        );
+
+        state = {
+            ...structuredClone(DEFAULT_STATE),
+            ...loaded
+        };
+
+        state.salaryAdjustments ??= {};
+        state.spendingAdjustments ??= {};
+        state.balanceActuals ??= {};
+
+        syncInputsFromState();
+
+        render();
+
+    } catch(err){
+
+        console.error(err);
+        alert("Invalid JSON");
+    }
 }
 
 function do_reset(){
