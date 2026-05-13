@@ -33,6 +33,20 @@ body {
     background:var(--panel);
     padding:14px;
     overflow:auto;
+
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+
+#json {
+    flex:1;
+    min-height:120px;
+    resize:vertical;
+}
+
+.field {
+    margin-bottom:0;
 }
 
 .field {
@@ -116,8 +130,6 @@ canvas {
 <div class="app">
 
 <div class="sidebar">
-    <h2>Forecast</h2>
-
     <div class="field">Starting Balance
         <input id="startingBalance" type="number" value="10000" step="100">
     </div>
@@ -150,8 +162,10 @@ canvas {
         <input id="startingSpending" type="number" value="25000" step="100">
     </div>
 
-    <button id="reset">Reset</button>
-    <button id="load">Load JSON</button>
+    <div class="buttonRow">
+        <button id="reset">Reset</button>
+        <button id="load">Load JSON</button>
+    </div>
 
     <h3>Scenario JSON</h3>
     <textarea id="json"></textarea>
@@ -328,8 +342,6 @@ function hook(){
     };
 }
 
-//function loadJSON(){ state = JSON.parse(json.value); render(); }
-
 const DEFAULT_STATE = {
     presentYear: new Date().getFullYear(),
     startingBalance:10000,
@@ -388,6 +400,8 @@ function loadJSON(){
 }
 
 function do_reset(){
+    state = structuredClone(DEFAULT_STATE);
+    syncInputsFromState();
     location.reload();
 }
 
