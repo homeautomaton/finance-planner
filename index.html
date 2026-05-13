@@ -348,7 +348,7 @@ function loadJSON(){
     render();
 }
 
-function reset(){
+function do_reset(){
     location.reload();
 }
 
@@ -369,7 +369,7 @@ document.querySelectorAll("input").forEach(i=>{
 });
 
 load.onclick=loadJSON;
-reset.onclick=reset;
+reset.onclick=do_reset;
 
 render();
 
