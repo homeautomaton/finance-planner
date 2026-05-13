@@ -256,9 +256,81 @@ function render(){
     const data = {
         labels:d.labels,
         datasets:[
-            {label:"Balance",data:d.bal,borderColor:"blue"},
-            {label:"Salary",data:d.sal,borderColor:"green"},
-            {label:"Spending",data:d.sp,borderColor:"red"}
+            {
+                label:"Balance",
+                data:d.bal,
+                borderColor:"blue",
+
+                pointRadius: d.bal.map((_, i) => {
+                    const year = parseInt(d.labels[i]);
+                    return state.balanceActuals[year] != null ? 5 : 2;
+                }),
+
+                pointBackgroundColor: d.bal.map((_, i) => {
+                    const year = parseInt(d.labels[i]);
+                    return state.balanceActuals[year] != null ? "white" : "blue";
+                }),
+
+                pointBorderColor: d.bal.map((_, i) => {
+                    const year = parseInt(d.labels[i]);
+                    return state.balanceActuals[year] != null ? "blue" : "blue";
+                }),
+
+                pointStyle: d.bal.map((_, i) => {
+                    const year = parseInt(d.labels[i]);
+                    return state.balanceActuals[year] != null ? "crossRot" : "circle";
+                })
+            },
+            {
+                label:"Salary",
+                data:d.sal,
+                borderColor:"green",
+
+                pointRadius: d.sal.map((_, i) => {
+                    const year = parseInt(d.labels[i]);
+                    return state.salaryAdjustments[year] != null ? 5 : 2;
+                }),
+
+                pointBackgroundColor: d.sal.map((_, i) => {
+                    const year = parseInt(d.labels[i]);
+                    return state.salaryAdjustments[year] != null ? "white" : "green";
+                }),
+
+                pointBorderColor: d.sal.map((_, i) => {
+                    const year = parseInt(d.labels[i]);
+                    return state.salaryAdjustments[year] != null ? "green" : "green";
+                }),
+
+                pointStyle: d.sal.map((_, i) => {
+                    const year = parseInt(d.labels[i]);
+                    return state.salaryAdjustments[year] != null ? "crossRot" : "circle";
+                })
+            },
+            {
+                label:"Spending",
+                data:d.sp,
+                borderColor:"red",
+
+                pointRadius: d.sp.map((_, i) => {
+                    const year = parseInt(d.labels[i]);
+                    return state.spendingAdjustments[year] != null ? 5 : 2;
+                }),
+
+                pointBackgroundColor: d.sp.map((_, i) => {
+                    const year = parseInt(d.labels[i]);
+                    return state.spendingAdjustments[year] != null ? "white" : "red";
+                }),
+
+                pointBorderColor: d.sp.map((_, i) => {
+                    const year = parseInt(d.labels[i]);
+                    return state.spendingAdjustments[year] != null ? "red" : "red";
+                }),
+
+                pointStyle: d.sp.map((_, i) => {
+                    const year = parseInt(d.labels[i]);
+                    return state.spendingAdjustments[year] != null ? "crossRot" : "circle";
+                })
+            }
         ]
     };
 
@@ -310,7 +382,7 @@ function render(){
                                     `${ctx.dataset.label}: ${value}`;
 
                                 if(stored){
-                                    return [ text, " — option-click to remove" ];
+                                    return [ text, " — opt/alt-click to remove" ];
                                 }
 
                                 return text;
@@ -398,6 +470,43 @@ function hook(){
 
         chart.update("none");
     };
+
+    c.onclick = (e) => {
+
+        // Only trigger on Option/Alt click
+        if (!e.altKey) return;
+
+        const pts = chart.getElementsAtEventForMode(
+            e,
+            "nearest",
+            { intersect: true },
+            true
+        );
+
+        if (!pts.length) return;
+
+        const p = pts[0];
+
+        const label = chart.data.labels[p.index];
+        const year = parseInt(label);
+
+        const ds = p.datasetIndex;
+
+        if (ds === 0) {
+            delete state.balanceActuals[year];
+        }
+
+        if (ds === 1) {
+            delete state.salaryAdjustments[year];
+        }
+
+        if (ds === 2) {
+            delete state.spendingAdjustments[year];
+        }
+
+        render();
+    };
+
 }
 
 const DEFAULT_STATE = {
