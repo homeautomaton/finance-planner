@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Financial Forecast - Documentation</title>
+
+<style>
+:root{
+    --bg:#121212;
+    --panel:#1f1f1f;
+    --panel2:#262626;
+    --text:#dddddd;
+    --muted:#9a9a9a;
+    --accent:#4da3ff;
+    --border:#3a3a3a;
+    --good:#62d26f;
+    --warn:#ffcc66;
+    --bad:#ff7676;
+}
+
+*{
+    box-sizing:border-box;
+}
+
+body{
+    margin:0;
+    font-family:system-ui, sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    line-height:1.6;
+}
+
+header{
+    padding:48px 28px;
+    background:linear-gradient(
+        180deg,
+        #1d1d1d,
+        #141414
+    );
+    border-bottom:1px solid var(--border);
+}
+
+header h1{
+    margin:0 0 12px 0;
+    font-size:2.6rem;
+}
+
+header p{
+    max-width:900px;
+    color:var(--muted);
+    font-size:1.05rem;
+}
+
+main{
+    max-width:1100px;
+    margin:auto;
+    padding:28px;
+}
+
+section{
+    margin-bottom:40px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:24px;
+}
+
+h2{
+    margin-top:0;
+    color:white;
+}
+
+h3{
+    margin-top:28px;
+    color:#f0f0f0;
+}
+
+code{
+    background:#111;
+    border:1px solid #333;
+    padding:2px 6px;
+    border-radius:6px;
+    color:#9fd3ff;
+}
+
+pre{
+    overflow:auto;
+    background:#101010;
+    border:1px solid #333;
+    border-radius:10px;
+    padding:16px;
+}
+
+ul{
+    padding-left:24px;
+}
+
+li{
+    margin-bottom:8px;
+}
+
+.tableWrap{
+    overflow:auto;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:14px;
+}
+
+th, td{
+    border:1px solid var(--border);
+    padding:12px;
+    text-align:left;
+    vertical-align:top;
+}
+
+th{
+    background:#2c2c2c;
+}
+
+.note{
+    background:#1d2a36;
+    border:1px solid #35506a;
+    border-radius:10px;
+    padding:16px;
+    margin:18px 0;
+}
+
+.warning{
+    background:#332616;
+    border:1px solid #6a4d26;
+    border-radius:10px;
+    padding:16px;
+    margin:18px 0;
+}
+
+.good{
+    background:#17311b;
+    border:1px solid #2d6940;
+    border-radius:10px;
+    padding:16px;
+    margin:18px 0;
+}
+
+kbd{
+    background:#2a2a2a;
+    border:1px solid #444;
+    border-bottom-width:3px;
+    border-radius:6px;
+    padding:2px 8px;
+    font-size:.9rem;
+}
+
+footer{
+    padding:40px 28px;
+    text-align:center;
+    color:var(--muted);
+}
+
+a{
+    color:var(--accent);
+}
+
+.heroGrid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:16px;
+    margin-top:28px;
+}
+
+.card{
+    background:var(--panel2);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:18px;
+}
+
+.card h3{
+    margin-top:0;
+}
+
+.small{
+    color:var(--muted);
+    font-size:.95rem;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>Financial Forecast</h1>
+
+    <p>
+        Financial Forecast is an interactive long-term money simulation and planning tool.
+        It combines retirement forecasting, cash-flow planning, savings visualization,
+        and “what-if” experimentation into a single graph-driven interface.
+    </p>
+
+    <p>
+        The application is designed both as a learning tool for younger users trying to
+        understand the long-term effects of income and spending habits, and as a practical
+        planning tool for later-life forecasting and retirement preparation.
+    </p>
+
+    <div class="heroGrid">
+
+        <div class="card">
+            <h3>Interactive Forecasting</h3>
+            <div class="small">
+                Drag values directly on the graph to experiment with salary,
+                spending, and account balance assumptions.
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Scenario Modeling</h3>
+            <div class="small">
+                Test raises, layoffs, inheritance, retirement spending,
+                planned purchases, or career changes.
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Education Through Visualization</h3>
+            <div class="small">
+                Watch small yearly changes compound over decades.
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Portable JSON Saves</h3>
+            <div class="small">
+                Save and load complete financial scenarios as standalone JSON files.
+            </div>
+        </div>
+
+    </div>
+</header>
+
+<main>
+
+<section>
+    <h2>Purpose of the Application</h2>
+
+    <p>
+        Most financial decisions do not feel important in the moment.
+        The purpose of Financial Forecast is to make those long-term consequences visible.
+    </p>
+
+    <p>
+        The app focuses on one core question:
+    </p>
+
+    <blockquote>
+        “If I continue along this path, where does it eventually lead?”
+    </blockquote>
+
+    <p>
+        Rather than concentrating on investment complexity, the simulator emphasizes:
+    </p>
+
+    <ul>
+        <li>Income versus spending</li>
+        <li>Long-term consistency</li>
+        <li>The effects of inflation</li>
+        <li>Lifestyle growth over time</li>
+        <li>The value of savings habits</li>
+        <li>The danger of persistent overspending</li>
+    </ul>
+
+    <div class="note">
+        The simulator intentionally stays relatively simple.
+        It is designed to encourage understanding and experimentation,
+        not to replace professional financial software or tax planning.
+    </div>
+</section>
+
+<section>
+
+    <h2>What the Graph Represents</h2>
+
+    <p>
+        The chart displays three independent lines over time:
+    </p>
+
+    <div class="tableWrap">
+        <table>
+            <tr>
+                <th>Line</th>
+                <th>Description</th>
+            </tr>
+
+            <tr>
+                <td><strong>Balance (Blue)</strong></td>
+                <td>
+                    Your projected account balance or net savings over time.
+                    This is affected by investment return assumptions,
+                    salary, spending, windfalls, and planned expenses.
+                </td>
+            </tr>
+
+            <tr>
+                <td><strong>Salary (Green)</strong></td>
+                <td>
+                    Your projected after-tax income.
+                    Salary can automatically grow annually using the Raises % setting,
+                    or be manually overridden for specific years.
+                </td>
+            </tr>
+
+            <tr>
+                <td><strong>Spending (Red)</strong></td>
+                <td>
+                    Your yearly spending or living costs.
+                    Spending typically rises due to inflation,
+                    but may also be manually adjusted.
+                </td>
+            </tr>
+        </table>
+    </div>
+
+</section>
+
+<section>
+
+    <h2>Core Assumptions</h2>
+
+    <p>
+        The left-side control panel contains the global assumptions used by the forecast engine.
+    </p>
+
+    <div class="tableWrap">
+        <table>
+
+            <tr>
+                <th>Setting</th>
+                <th>Meaning</th>
+            </tr>
+
+            <tr>
+                <td><strong>Starting Balance</strong></td>
+                <td>Your initial savings or account balance.</td>
+            </tr>
+
+            <tr>
+                <td><strong>Birth Year</strong></td>
+                <td>
+                    Used to calculate your age at each point in the timeline.
+                </td>
+            </tr>
+
+            <tr>
+                <td><strong>Years</strong></td>
+                <td>
+                    How many future years should be simulated.
+                </td>
+            </tr>
+
+            <tr>
+                <td><strong>Return %</strong></td>
+                <td>
+                    Assumed annual investment growth rate.
+                </td>
+            </tr>
+
+            <tr>
+                <td><strong>Inflation %</strong></td>
+                <td>
+                    Automatic yearly growth of spending.
+                </td>
+            </tr>
+
+            <tr>
+                <td><strong>Raises %</strong></td>
+                <td>
+                    Automatic yearly growth of salary.
+                </td>
+            </tr>
+
+            <tr>
+                <td><strong>Salary after taxes</strong></td>
+                <td>
+                    Starting yearly income after taxes.
+                </td>
+            </tr>
+
+            <tr>
+                <td><strong>Spending</strong></td>
+                <td>
+                    Starting yearly spending.
+                </td>
+            </tr>
+
+        </table>
+    </div>
+
+</section>
+
+<section>
+
+    <h2>Interactive Editing</h2>
+
+    <p>
+        One of the application's most important features is direct manipulation of the chart.
+    </p>
+
+    <h3>Dragging Points</h3>
+
+    <ul>
+        <li>
+            Click and drag a point to change its value directly on the graph.
+        </li>
+
+        <li>
+            While dragging, values normally snap to the nearest 100 units for cleaner editing.
+        </li>
+
+        <li>
+            Hold <kbd>Shift</kbd> while dragging to disable snapping.
+        </li>
+
+        <li>
+            Dragging creates a persistent override for that year.
+        </li>
+    </ul>
+
+    <h3>Opening the Year Editor</h3>
+
+    <ul>
+        <li>
+            Click a point without dragging to open the detailed year editor.
+        </li>
+
+        <li>
+            The year editor allows multiple changes at once.
+        </li>
+    </ul>
+
+    <h3>Removing Overrides</h3>
+
+    <ul>
+        <li>
+            Hold <kbd>Alt</kbd> / <kbd>Option</kbd> and click a point to remove its saved override.
+        </li>
+    </ul>
+
+    <div class="good">
+        The graph is designed to encourage experimentation.
+        Try intentionally unrealistic scenarios just to understand how sensitive
+        long-term outcomes are to relatively small yearly changes.
+    </div>
+
+</section>
+
+<section>
+
+    <h2>The Year Editor</h2>
+
+    <p>
+        Clicking a year opens a detailed editor for that specific point in time.
+    </p>
+
+    <h3>Overrides</h3>
+
+    <p>
+        Overrides replace the simulator's calculated value for that year.
+    </p>
+
+    <div class="tableWrap">
+        <table>
+
+            <tr>
+                <th>Field</th>
+                <th>Purpose</th>
+            </tr>
+
+            <tr>
+                <td><strong>Balance</strong></td>
+                <td>
+                    Replace the calculated balance with an exact value.
+                </td>
+            </tr>
+
+            <tr>
+                <td><strong>Salary</strong></td>
+                <td>
+                    Override income beginning that year.
+                </td>
+            </tr>
+
+            <tr>
+                <td><strong>Spending</strong></td>
+                <td>
+                    Override yearly spending beginning that year.
+                </td>
+            </tr>
+
+        </table>
+    </div>
+
+    <h3>One-Time Events</h3>
+
+    <div class="tableWrap">
+        <table>
+
+            <tr>
+                <th>Field</th>
+                <th>Purpose</th>
+            </tr>
+
+            <tr>
+                <td><strong>Windfall Income</strong></td>
+                <td>
+                    Add a one-time increase to the balance.
+                    Examples: inheritance, selling a house,
+                    bonuses, business sale, lawsuit settlement.
+                </td>
+            </tr>
+
+            <tr>
+                <td><strong>Planned Expense</strong></td>
+                <td>
+                    Add a one-time reduction in balance.
+                    Examples: home purchase, vehicle replacement,
+                    surgery, tuition, remodeling.
+                </td>
+            </tr>
+
+        </table>
+    </div>
+
+</section>
+
+<section>
+
+    <h2>JSON Scenario System</h2>
+
+    <p>
+        Every scenario in the app is represented as JSON.
+    </p>
+
+    <p>
+        The JSON panel is not merely an export format —
+        it is the application's complete internal state.
+    </p>
+
+    <h3>Why This Matters</h3>
+
+    <ul>
+        <li>Scenarios are easy to save and share.</li>
+        <li>Power users can edit values directly.</li>
+        <li>Forecasts are transparent and inspectable.</li>
+        <li>No hidden database or backend exists.</li>
+    </ul>
+
+    <h3>Example</h3>
+
+<pre>{
+  "startingBalance": 15000,
+  "startingSalary": 45000,
+  "startingSpending": 32000,
+
+  "salaryAdjustments": {
+    "2030": 60000
+  },
+
+  "plannedExpenses": {
+    "2032": 18000
+  },
+
+  "windfallIncome": {
+    "2040": 250000
+  }
+}</pre>
+
+    <h3>Buttons</h3>
+
+    <div class="tableWrap">
+        <table>
+
+            <tr>
+                <th>Button</th>
+                <th>Function</th>
+            </tr>
+
+            <tr>
+                <td><strong>Apply</strong></td>
+                <td>
+                    Parse and apply the JSON currently shown in the editor.
+                </td>
+            </tr>
+
+            <tr>
+                <td><strong>Download</strong></td>
+                <td>
+                    Save the current scenario to a JSON file.
+                </td>
+            </tr>
+
+            <tr>
+                <td><strong>Upload</strong></td>
+                <td>
+                    Load a previously saved JSON scenario.
+                </td>
+            </tr>
+
+            <tr>
+                <td><strong>Reset</strong></td>
+                <td>
+                    Restore default values.
+                </td>
+            </tr>
+
+        </table>
+    </div>
+
+</section>
+
+<section>
+
+    <h2>Retirement Planning Uses</h2>
+
+    <p>
+        The simulator works well as a lightweight retirement planner.
+    </p>
+
+    <p>
+        Common uses include:
+    </p>
+
+    <ul>
+        <li>Testing retirement ages</li>
+        <li>Estimating sustainable spending</li>
+        <li>Modeling reduced post-retirement income</li>
+        <li>Planning major purchases</li>
+        <li>Visualizing investment growth over decades</li>
+        <li>Exploring “coast FIRE” style scenarios</li>
+        <li>Evaluating the impact of lifestyle inflation</li>
+    </ul>
+
+    <div class="note">
+        Because the simulator is intentionally simple,
+        it should be viewed as a directional planning tool rather than a precise predictor.
+    </div>
+
+</section>
+
+<section>
+
+    <h2>Educational Uses</h2>
+
+    <p>
+        Financial Forecast is especially effective as a teaching tool because
+        it makes compounding visually obvious.
+    </p>
+
+    <p>
+        Younger users can quickly discover:
+    </p>
+
+    <ul>
+        <li>
+            Small spending increases become large long-term costs.
+        </li>
+
+        <li>
+            Early savings matter more than many people expect.
+        </li>
+
+        <li>
+            Raises alone do not guarantee wealth accumulation.
+        </li>
+
+        <li>
+            Inflation silently changes future spending requirements.
+        </li>
+
+        <li>
+            A modest positive yearly gap between income and spending
+            can compound dramatically over time.
+        </li>
+    </ul>
+
+</section>
+
+<section>
+
+    <h2>Important Limitations</h2>
+
+    <div class="warning">
+
+        <strong>This is not professional financial software.</strong>
+
+        <p>
+            The application intentionally avoids many forms of complexity
+            in order to remain understandable and interactive.
+        </p>
+
+    </div>
+
+    <h3>Current Simplifications</h3>
+
+    <ul>
+        <li>No debt interest calculations</li>
+        <li>No loan amortization</li>
+        <li>No tax modeling</li>
+        <li>No account type distinctions</li>
+        <li>No inflation-adjusted investment classes</li>
+        <li>No Social Security calculations</li>
+        <li>No Monte Carlo simulation</li>
+        <li>No sequence-of-returns analysis</li>
+    </ul>
+
+    <h3>Debt Modeling</h3>
+
+    <p>
+        Debt is intentionally simplified.
+    </p>
+
+    <p>
+        If you want to simulate debt repayment,
+        debt payments should generally be included in yearly spending.
+    </p>
+
+    <p>
+        However, because debt interest does not compound separately,
+        the simulator becomes less accurate for highly leveraged situations.
+    </p>
+
+    <p>
+        The application is fundamentally optimized around:
+    </p>
+
+    <ul>
+        <li>Positive savings behavior</li>
+        <li>Long-term investing</li>
+        <li>Cash-flow awareness</li>
+        <li>Living below income</li>
+    </ul>
+
+</section>
+
+<section>
+
+    <h2>The “Dysentery” Event</h2>
+
+    <p>
+        If the projected balance falls below the application's hard debt threshold,
+        the simulator displays the “You have died of dysentery” overlay.
+    </p>
+
+    <p>
+        This is intentionally humorous and acts as a visual warning that
+        the simulated financial path has become catastrophically unsustainable.
+    </p>
+
+    <p>
+        Clicking the overlay minimizes it.
+    </p>
+
+</section>
+
+<section>
+
+    <h2>Suggested Workflow</h2>
+
+    <ol>
+        <li>Enter realistic starting values.</li>
+        <li>Adjust expected raises and inflation.</li>
+        <li>Experiment with spending levels.</li>
+        <li>Add major future purchases.</li>
+        <li>Model career changes or retirement.</li>
+        <li>Compare multiple saved scenarios.</li>
+        <li>Observe which variables matter most.</li>
+    </ol>
+
+    <div class="good">
+        Most users discover that spending consistency matters more than isolated large events.
+    </div>
+
+</section>
+
+<section>
+
+    <h2>Design Philosophy</h2>
+
+    <p>
+        Financial software often becomes so detailed that users stop experimenting.
+    </p>
+
+    <p>
+        Financial Forecast intentionally favors:
+    </p>
+
+    <ul>
+        <li>Simplicity</li>
+        <li>Immediate visual feedback</li>
+        <li>Rapid experimentation</li>
+        <li>Human readability</li>
+        <li>Transparency of assumptions</li>
+    </ul>
+
+    <p>
+        The goal is not perfect prediction.
+        The goal is improved intuition.
+    </p>
+
+</section>
+
+</main>
+
+<footer>
+    Financial Forecast Documentation
+</footer>
+
+</body>
+</html>
