@@ -122,6 +122,46 @@ canvas {
     opacity:0.45;
 }
 
+.helpButton {
+    position:absolute;
+    right:14px;
+    bottom:14px;
+    width:34px;
+    height:34px;
+    border-radius:50%;
+    background:#222;
+    border:1px solid #555;
+    color:white;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:bold;
+    cursor:pointer;
+    z-index:25;
+    user-select:none;
+}
+
+.helpOverlay {
+    position:absolute;
+    inset:0;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    background:rgba(0,0,0,0.5);
+    z-index:30;
+}
+
+.helpBox {
+    width:min(80%, 720px);
+    max-height:85%;
+    overflow:auto;
+    background:#1f1f1f;
+    color:#ddd;
+    border:1px solid #444;
+    border-radius:14px;
+    padding:18px;
+    box-shadow:0 0 40px rgba(0,0,0,0.7);
+}
 </style>
 </head>
 
@@ -164,8 +204,12 @@ canvas {
 
     <div class="buttonRow">
         <button id="reset">Reset</button>
-        <button id="load">Load JSON</button>
+        <button id="load">Apply</button>
+        <button id="upload">Upload</button>
+        <button id="download">Download</button>
     </div>
+
+    <input type="file" id="fileInput" accept="application/json" style="display:none;">
 
     <h3>Scenario JSON</h3>
     <textarea id="json"></textarea>
@@ -176,6 +220,24 @@ canvas {
         <canvas id="c"></canvas>
         <div class="deathOverlay" id="death">
             <img id="deathImage" src="dys.png" alt="You have died of dysentery.">
+        </div>
+        <div class="helpButton" id="helpBtn">?</div>
+        
+        <div class="helpOverlay" id="help">
+            <div class="helpBox" id="helpBox">
+                <h2>Instructions</h2>
+                <p><b>Graph:</b> shows Balance, Salary, and Spending over time.</p>
+                <p><b>Left panel:</b> controls base assumptions. Changes here affect the whole forecast.</p>
+                <p><b>JSON box:</b> full state representation. Can be edited directly or generated from interactions.</p>
+                <p><b>Apply:</b> runs the JSON in the box and updates the simulation state.</p>
+                <p><b>Download:</b> save JSON to your local device.</p>
+                <p><b>Upload:</b> load JSON from your local device. </p>
+                <hr>
+                <p><b>Dragging points:</b> overrides a single year’s value and updates JSON automatically.</p>
+                <p><b>Shift + drag:</b> snaps values to nearest 100.</p>
+                <p><b>Opt/Alt-click:</b> removes a saved override at a point.</p>
+                <p><b>Saved points:</b> visually marked (cross / hollow style).</p>
+            </div>
         </div>
     </div>
 </div>
@@ -423,6 +485,20 @@ function render(){
         JSON.stringify(state,null,2);
 }
 
+const helpBtn = document.getElementById("helpBtn");
+const help = document.getElementById("help");
+
+helpBtn.onclick = () => {
+    help.style.display = "flex";
+};
+
+help.onclick = (e) => {
+    // click outside box closes
+    if (e.target === help) {
+        help.style.display = "none";
+    }
+};
+
 function hook(){
 
     const c = chart.canvas;
@@ -539,6 +615,30 @@ function syncInputsFromState(){
     document.getElementById("startingSpending").value = state.startingSpending;
 }
 
+function uploadJSON(text){
+
+    try {
+
+        const loaded = JSON.parse(text);
+
+        state = {
+            ...structuredClone(DEFAULT_STATE),
+            ...loaded
+        };
+
+        state.salaryAdjustments ??= {};
+        state.spendingAdjustments ??= {};
+        state.balanceActuals ??= {};
+
+        syncInputsFromState();
+        render();
+
+    } catch(err){
+        console.error(err);
+        alert("Invalid JSON");
+    }
+}
+
 function loadJSON(){
 
     try {
@@ -588,6 +688,52 @@ document.querySelectorAll("input").forEach(i=>{
         render();
     };
 });
+
+const fileInput = document.getElementById("fileInput");
+
+fileInput.onchange = async (e) => {
+
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const text = await file.text();
+    uploadJSON(text);
+
+    fileInput.value = "";
+};
+
+upload.onclick = () => {
+    fileInput.click();
+};
+
+download.onclick = () => {
+
+    let name = prompt(
+        "Filename:",
+        "forecast.json"
+    );
+
+    if (!name) return;
+
+    // ensure .json extension
+    if (!name.endsWith(".json")) {
+        name += ".json";
+    }
+
+    const blob = new Blob(
+        [JSON.stringify(state, null, 2)],
+        { type: "application/json" }
+    );
+
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    a.click();
+
+    URL.revokeObjectURL(url);
+};
 
 load.onclick=loadJSON;
 reset.onclick=do_reset;
