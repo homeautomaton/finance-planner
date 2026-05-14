@@ -122,6 +122,7 @@ canvas {
     opacity:0.45;
 }
 
+/* HELP POP-UP */
 .helpButton {
     position:absolute;
     right:14px;
@@ -162,6 +163,8 @@ canvas {
     padding:18px;
     box-shadow:0 0 40px rgba(0,0,0,0.7);
 }
+
+/* EDIT BOX POP-UP */
 .editOverlay {
     position:absolute;
     inset:0;
@@ -260,8 +263,8 @@ canvas {
                 <p><b>Download:</b> save JSON to your local device.</p>
                 <p><b>Upload:</b> load JSON from your local device. </p>
                 <hr>
-                <p><b>Dragging points:</b> overrides a single year’s value and updates JSON automatically.</p>
-                <p><b>Shift + drag:</b> snaps values to nearest 100.</p>
+                <p><b>Dragging points:</b> overrides a single year’s value and updates JSON automatically, normally snapped to nearest 100.</p>
+                <p><b>Shift + drag:</b> override without snap to nearest 100</p>
                 <p><b>Opt/Alt-click:</b> removes a saved override at a point.</p>
                 <p><b>Saved points:</b> visually marked (cross / hollow style).</p>
             </div>
@@ -276,29 +279,29 @@ canvas {
 
                 <div class="field">
                     Balance
-                    <input id="editBalance" type="number">
+                    <input id="editBalance" type="number" step=100>
                 </div>
 
                 <div class="field">
                     Salary
-                    <input id="editSalary" type="number">
+                    <input id="editSalary" type="number" step=100>
                 </div>
 
                 <div class="field">
                     Spending
-                    <input id="editSpending" type="number">
+                    <input id="editSpending" type="number" step=100>
                 </div>
 
                 <h3>One-Time Events</h3>
 
                 <div class="field">
                     Windfall Income
-                    <input id="editWindfall" type="number">
+                    <input id="editWindfall" type="number" step=100>
                 </div>
 
                 <div class="field">
                     Planned Expense
-                    <input id="editExpense" type="number">
+                    <input id="editExpense" type="number" step=100>
                 </div>
 
                 <div class="buttonRow">
@@ -620,17 +623,6 @@ function hook(){
 
     const c = chart.canvas;
 
-/*
-    c.onmousedown = e=>{
-        const pts = chart.getElementsAtEventForMode(
-            e,"nearest",{intersect:true},true
-        );
-        if(!pts.length) return;
-
-        drag = pts[0];
-        freezeScale = true;
-    };
-*/
     c.onmousedown = e=>{
 
         movedDuringClick = false;
@@ -653,14 +645,6 @@ function hook(){
         freezeScale = true;
     };
 
-/*
-    window.onmouseup = ()=>{
-        if(!drag) return;
-        drag=null;
-        freezeScale=false;
-        render();
-    };
-*/
     window.onmouseup = e=>{
 
         if(drag){
@@ -700,7 +684,7 @@ function hook(){
 
         const rect = c.getBoundingClientRect();
         let yv = Math.round(chart.scales.y.getValueForPixel(e.clientY-rect.top));
-        if (e.shiftKey) {
+        if (!e.shiftKey) {
             yv = Math.round(yv / 100) * 100;
         }
 
