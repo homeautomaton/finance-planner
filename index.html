@@ -282,6 +282,9 @@ function build() {
             if(state.plannedExpenses[year] != null)
                 balance -= state.plannedExpenses[year];
 
+            if(state.windfallIncome[year] != null)
+                balance += state.windfallIncome[year];
+
             balance = balance*(1+state.returnRate/100)
                     + salary - spend;
 
@@ -600,7 +603,8 @@ const DEFAULT_STATE = {
     salaryAdjustments:{},
     spendingAdjustments:{},
     balanceActuals:{},
-    plannedExpenses:{}
+    plannedExpenses:{},
+    windfallIncome:{}
 };
 
 let state = structuredClone(DEFAULT_STATE);
