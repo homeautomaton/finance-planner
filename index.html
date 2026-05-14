@@ -338,6 +338,7 @@ let deathDismissed = false;
 let clickStart = null;
 let movedDuringClick = false;
 let editingYear = null;
+let jsonDirty = false;
 
 function y(v){return Number(v)}
 
@@ -572,8 +573,9 @@ function render(){
         else chart.update("none");
     }
 
-    document.getElementById("json").value =
-        JSON.stringify(state,null,2);
+    if (!jsonDirty) {
+        jsonEl.value = JSON.stringify(state, null, 2);
+    }
 }
 
 const helpBtn = document.getElementById("helpBtn");
@@ -799,8 +801,11 @@ function uploadJSON(text){
         state.salaryAdjustments ??= {};
         state.spendingAdjustments ??= {};
         state.balanceActuals ??= {};
+        state.plannedExpenses ??= {};
+        state.windfallIncome ??= {};
 
         syncInputsFromState();
+        jsonDirty = false;
         render();
 
     } catch(err){
@@ -811,11 +816,12 @@ function uploadJSON(text){
 
 function loadJSON(){
 
+    // Capture text immediately before any render can occur
+    const text = jsonEl.value;
+
     try {
 
-        const loaded = JSON.parse(
-            document.getElementById("json").value
-        );
+        const loaded = JSON.parse(text);
 
         state = {
             ...structuredClone(DEFAULT_STATE),
@@ -825,8 +831,12 @@ function loadJSON(){
         state.salaryAdjustments ??= {};
         state.spendingAdjustments ??= {};
         state.balanceActuals ??= {};
+        state.plannedExpenses ??= {};
+        state.windfallIncome ??= {};
 
         syncInputsFromState();
+
+        jsonDirty = false;
 
         render();
 
@@ -982,6 +992,20 @@ window.addEventListener("keydown", e => {
             closeYearEditor();
         }
     }
+});
+
+const jsonEl = document.getElementById("json");
+
+jsonEl.addEventListener("input", () => {
+    jsonDirty = true;
+});
+
+jsonEl.addEventListener("focus", () => {
+    jsonDirty = true;
+});
+
+jsonEl.addEventListener("blur", () => {
+    // leave dirty until Apply is pressed
 });
 
 render();
