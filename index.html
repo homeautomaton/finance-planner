@@ -354,7 +354,7 @@ function build() {
 
     for(let i=0;i<years;i++){
 
-        const year = state.presentYear + i;
+        const year = state.startYear + i;
         const age = year - state.birthYear;
 
         labels.push(`${year} (Age ${age})`);
@@ -757,7 +757,7 @@ function hook(){
 }
 
 const DEFAULT_STATE = {
-    presentYear: new Date().getFullYear(),
+    startYear: new Date().getFullYear(),
     startingBalance:10000,
     birthYear:2001,
     years:30,
