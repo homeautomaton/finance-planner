@@ -272,23 +272,25 @@ function build() {
 
         labels.push(`${year} (Age ${age})`);
 
-        if(state.salaryAdjustments[year] != null)
-            salary = state.salaryAdjustments[year];
+        if ( i > 0 ) {
+            if(state.salaryAdjustments[year] != null)
+                salary = state.salaryAdjustments[year];
 
-        if(state.spendingAdjustments[year] != null)
-            spend = state.spendingAdjustments[year];
+            if(state.spendingAdjustments[year] != null)
+                spend = state.spendingAdjustments[year];
 
-        if(state.plannedExpenses[year] != null)
-            balance -= state.plannedExpenses[year];
+            if(state.plannedExpenses[year] != null)
+                balance -= state.plannedExpenses[year];
 
-        balance = balance*(1+state.returnRate/100)
-                + salary - spend;
+            balance = balance*(1+state.returnRate/100)
+                    + salary - spend;
 
-        if(state.balanceActuals[year] != null)
-            balance = state.balanceActuals[year];
+            if(state.balanceActuals[year] != null)
+                balance = state.balanceActuals[year];
 
-        balance = Math.max(DEBT_LIMIT,balance);
+            balance = Math.max(DEBT_LIMIT,balance);
 
+        }
         sal.push(salary);
         sp.push(spend);
         bal.push(balance);
