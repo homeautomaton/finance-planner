@@ -46,13 +46,53 @@ body {
 }
 
 .field {
-    margin-bottom:0;
+    display:flex;
+    flex-direction:row;
+    align-items:center;
+    gap:10px;
+    margin-bottom:2px;
 }
 
-.field {
-    display:flex;
-    flex-direction:column;
-    margin-bottom:10px;
+.field label {
+    width:120px;
+    flex-shrink:0;
+    text-align:right;
+}
+
+.field input {
+    flex:1;
+}
+
+.field_popup input {
+    flex:1;
+    max-width:170px;
+}
+
+.field.field_popup label {
+    cursor:pointer;
+    user-select:none;
+    min-width:170px;
+}
+
+.field.field_popup label:hover {
+    text-decoration:underline;
+    opacity:0.85;
+}
+
+.field.field_popup label:active {
+    transform:translateY(1px);
+}
+
+.field.field_popup label::after {
+    content:" ⟲";
+    font-size:0.85em;
+    opacity:0.5;
+}
+
+.field_popup input::placeholder {
+    color:#888;
+    opacity:1; /* Firefox otherwise fades it too much */
+    font-style:italic;
 }
 
 input, textarea {
@@ -200,7 +240,7 @@ canvas {
 <div class="app">
 
 <div class="sidebar">
-    <div class="field">Starting Balance
+    <div class="field">Start Balance
         <input id="startingBalance" type="number" value="10000" step="100">
     </div>
 
@@ -224,7 +264,7 @@ canvas {
         <input id="raiseRate" type="number" value="3" step=".1">
     </div>
 
-    <div class="field">Salary after taxes
+    <div class="field">Income Post Tax
         <input id="startingSalary" type="number" value="30000" step="100">
     </div>
 
@@ -241,7 +281,7 @@ canvas {
 
     <input type="file" id="fileInput" accept="application/json" style="display:none;">
 
-    <h3>Scenario JSON</h3>
+    <h3>Scenarios</h3>
     <textarea id="json"></textarea>
 </div>
 
@@ -287,35 +327,45 @@ canvas {
 
                 <h3>Overrides</h3>
 
-                <div class="field">
-                    Balance
+                <div class="field field_popup">
+                    <label for="editBalance">Balance</label>
                     <input id="editBalance" type="number" step=100>
                 </div>
 
-                <div class="field">
-                    Salary
+                <div class="field field_popup">
+                    <label for="editSalary">Salary</label>
                     <input id="editSalary" type="number" step=100>
                 </div>
 
-                <div class="field">
-                    Spending
+                <div class="field field_popup">
+                    <label for="editSpending">Spending</label>
                     <input id="editSpending" type="number" step=100>
+                </div>
+
+                <div class="field field_popup">
+                    <label for="editYearlyRaiseRate">Yearly Raise Rate</label>
+                    <input id="editYearlyRaiseRate" type="number" step=1>
+                </div>
+
+                <div class="field field_popup">
+                    <label for="editYearlyInflationRate">Yearly Inflation Rate</label>
+                    <input id="editYearlyInflationRate" type="number" step=1>
                 </div>
 
                 <h3>One-Time Events</h3>
 
                 <div class="field">
-                    Windfall Income
+                    <label for="editWindfall">Windfall&nbsp;Income</label>
                     <input id="editWindfall" type="number" step=100>
                 </div>
 
                 <div class="field">
-                    Planned Expense
+                    <label for="editExpense">Planned&nbsp;Expense</label>
                     <input id="editExpense" type="number" step=100>
                 </div>
 
                 <div class="buttonRow">
-                    <button id="clearYear">Clear Year</button>
+                    <button id="clearYear">Clear All</button>
                     <button id="cancelYear">Cancel</button>
                     <button id="saveYear">Save</button>
                 </div>
@@ -340,15 +390,60 @@ let movedDuringClick = false;
 let editingYear = null;
 let jsonDirty = false;
 
+function getYearlyValue(data, year, scenarios) {
+  const entry = data?.[year];
+  if (entry == null) return null;
+
+  function sum(item, scnearios) {
+    if (item == null) return null;
+
+    if (typeof item === "number") {
+      return item;
+    }
+
+    if (Array.isArray(item)) {
+      let total = null;
+
+      for (const v of item) {
+        const s = sum(v, scnearios);
+        if (s != null) {
+          total = (total ?? 0) + s;
+        }
+      }
+
+      return total;
+    }
+
+    if (typeof item === "object") {
+      if (item.scenario != null && !scenarios.includes(item.scenario)) return null;
+
+      if ("value" in item) {
+        return sum(item.value, scnearios);
+      }
+
+      return null;
+    }
+
+    return null;
+  }
+
+  const result = sum(entry);
+
+  return result == null ? null : result;
+}
+
 function y(v){return Number(v)}
 
-function build() {
+labels=[], bal=[], sal=[], sp=[], yrr=[], yir=[];
 
-    const labels=[], bal=[], sal=[], sp=[];
+function build() {
 
     let salary = state.startingSalary;
     let spend = state.startingSpending;
     let balance = state.startingBalance;
+    let raiseRate = state.raiseRate;
+    let inflationRate = state.inflationRate;
+    labels=[], bal=[], sal=[], sp=[], yrr=[], yir=[];
 
     const years = state.years;
 
@@ -360,23 +455,29 @@ function build() {
         labels.push(`${year} (Age ${age})`);
 
         if ( i > 0 ) {
-            if(state.salaryAdjustments[year] != null)
-                salary = state.salaryAdjustments[year];
+            adj = getYearlyValue( state.salaryAdjustments, year, state.scenarios );
+            if ( adj !== null ) salary = adj;
 
-            if(state.spendingAdjustments[year] != null)
-                spend = state.spendingAdjustments[year];
+            adj = getYearlyValue( state.spendingAdjustments, year, state.scenarios );
+            if ( adj !== null ) spend = adj;
 
-            if(state.plannedExpenses[year] != null)
-                balance -= state.plannedExpenses[year];
+            adj = getYearlyValue( state.plannedExpenses, year, state.scenarios );
+            if ( adj !== null ) balance -= adj;
 
-            if(state.windfallIncome[year] != null)
-                balance += state.windfallIncome[year];
+            adj = getYearlyValue( state.windfallIncome, year, state.scenarios );
+            if ( adj !== null ) balance += adj;
 
             balance = balance*(1+state.returnRate/100)
                     + salary - spend;
 
-            if(state.balanceActuals[year] != null)
-                balance = state.balanceActuals[year];
+            adj = getYearlyValue( state.balanceActuals, year, state.scenarios );
+            if ( adj !== null ) balance = adj;
+
+            adj = getYearlyValue( state.yearlyRaiseRate, year, state.scenarios );
+            if ( adj !== null ) raiseRate = adj;
+
+            adj = getYearlyValue( state.yearlyInflationRate, year, state.scenarios );
+            if ( adj !== null ) inflationRate = adj;
 
             balance = Math.max(DEBT_LIMIT,balance);
 
@@ -384,9 +485,11 @@ function build() {
         sal.push(salary);
         sp.push(spend);
         bal.push(balance);
+        yrr.push(raiseRate);
+        yir.push(inflationRate);
 
-        salary *= (1+(state.raiseRate)/100);
-        spend *= (1+state.inflationRate/100);
+        salary *= (1+(raiseRate)/100);
+        spend *= (1+inflationRate/100);
     }
 
     return {labels,bal,sal,sp};
@@ -399,6 +502,7 @@ function render(){
     const dead = d.bal.some(v => v <= DEBT_LIMIT);
 
     const deathEl = document.getElementById("death");
+    console.log( JSON.stringify(d, null, 2) )
 
     deathEl.style.display = dead ? "flex" : "none";
 
@@ -595,24 +699,40 @@ help.onclick = (e) => {
 function openYearEditor(year){
 
     editingYear = year;
+    offset = editingYear - state.startYear
 
     editTitle.textContent =
         `${year} (Age ${year - state.birthYear})`;
 
     editBalance.value =
         state.balanceActuals[year] ?? "";
+    editBalance.placeholder = Math.round(bal[offset])
 
     editSalary.value =
         state.salaryAdjustments[year] ?? "";
+    editSalary.placeholder =
+        Math.round(sal[offset])
 
     editSpending.value =
         state.spendingAdjustments[year] ?? "";
+    editSpending.placeholder =
+        Math.round(sp[offset])
 
     editWindfall.value =
         state.windfallIncome?.[year] ?? "";
 
     editExpense.value =
         state.plannedExpenses?.[year] ?? "";
+
+    editYearlyRaiseRate.value =
+        state.yearlyRaiseRate?.[year] ?? "";
+    editYearlyRaiseRate.placeholder =
+        Math.round(yrr[offset])
+
+    editYearlyInflationRate.value =
+        state.yearlyInflationRate?.[year] ?? "";
+    editYearlyInflationRate.placeholder = 
+        Math.round(yir[offset])
 
     editOverlay.style.display = "flex";
 }
@@ -758,6 +878,7 @@ function hook(){
 
 const DEFAULT_STATE = {
     startYear: new Date().getFullYear(),
+    scenarios: ["A","B"],
     startingBalance:10000,
     birthYear:2001,
     years:30,
@@ -770,7 +891,9 @@ const DEFAULT_STATE = {
     spendingAdjustments:{},
     balanceActuals:{},
     plannedExpenses:{},
-    windfallIncome:{}
+    windfallIncome:{},
+    yearlyRaiseRate:{},
+    yearlyInflationRate:{}
 };
 
 let state = structuredClone(DEFAULT_STATE);
@@ -803,6 +926,8 @@ function uploadJSON(text){
         state.balanceActuals ??= {};
         state.plannedExpenses ??= {};
         state.windfallIncome ??= {};
+        state.yearlyRaiseRate ??= {};
+        state.yearlyInflationRate ??= {};
 
         syncInputsFromState();
         jsonDirty = false;
@@ -833,6 +958,8 @@ function loadJSON(){
         state.balanceActuals ??= {};
         state.plannedExpenses ??= {};
         state.windfallIncome ??= {};
+        state.yearlyRaiseRate ??= {};
+        state.yearlyInflationRate ??= {};
 
         syncInputsFromState();
 
@@ -867,6 +994,18 @@ document.querySelectorAll("input").forEach(i=>{
         });
         render();
     };
+});
+
+document.querySelectorAll('.field_popup label').forEach(label => {
+    label.addEventListener('click', () => {
+        const input = document.getElementById(label.htmlFor);
+
+        // only fill if blank
+        if (input.value !== '') return;
+
+        //input.value = getComputedValueForYear(input.id);
+        input.value = input.placeholder;
+    });
 });
 
 const fileInput = document.getElementById("fileInput");
@@ -921,6 +1060,8 @@ saveYear.onclick = ()=>{
 
     state.windfallIncome ??= {};
     state.plannedExpenses ??= {};
+    state.yearlyRaiseRate ??= {};
+    state.yearlyInflationRate ??= {};
 
     setOrDelete(
         state.balanceActuals,
@@ -952,23 +1093,94 @@ saveYear.onclick = ()=>{
         editExpense.value
     );
 
+    setOrDelete(
+        state.yearlyRaiseRate,
+        year,
+        editYearlyRaiseRate.value
+    );
+
+    setOrDelete(
+        state.yearlyInflationRate,
+        year,
+        editYearlyInflationRate.value
+    );
+
     closeYearEditor();
     render();
 };
+
+
+function roundToStep(value, step) {
+    step = Number(step);
+
+    if (!step || isNaN(step))
+        return value;
+
+    return Math.round(value / step) * step;
+}
+
+function initializeSteppedInput(input, round) {
+    if (input.value !== '')
+        return;
+
+    const step =
+        Number(input.step) || 1;
+
+    const computed =
+        Number(input.placeholder);
+
+    if (isNaN(computed))
+        return;
+
+    if (round)
+        input.value = roundToStep(computed, step);
+    else
+        input.value = computed;
+}
+
+document.addEventListener('mousedown', e => {
+    const input = e.target;
+
+    if (!(input instanceof HTMLInputElement))
+        return;
+
+    if (input.type !== 'number')
+        return;
+
+    initializeSteppedInput(input, false);
+});
+
+document.addEventListener('keydown', e => {
+    const input = e.target;
+
+    if (!(input instanceof HTMLInputElement))
+        return;
+
+    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown')
+        return;
+
+    initializeSteppedInput(input, true);
+});
 
 clearYear.onclick = ()=>{
 
     const year = editingYear;
 
-    delete state.balanceActuals[year];
-    delete state.salaryAdjustments[year];
-    delete state.spendingAdjustments[year];
+    //delete state.balanceActuals[year];
+    //delete state.salaryAdjustments[year];
+    //delete state.spendingAdjustments[year];
+    //delete state.windfallIncome?.[year];
+    //delete state.plannedExpenses?.[year];
+    //delete state.yearlyRaiseRate?.[year];
+    //delete state.yearlyInflationRate?.[year];
 
-    delete state.windfallIncome?.[year];
-    delete state.plannedExpenses?.[year];
-
-    closeYearEditor();
-    render();
+    editBalance.value = ""
+    editSalary.value = ""
+    editSpending.value = ""
+    editWindfall.value = ""
+    editExpense.value = ""
+    editYearlyRaiseRate.value = ""
+    editYearlyInflationRate.value = ""
 };
 
 cancelYear.onclick = () => {
@@ -1014,3 +1226,4 @@ render();
 
 </body>
 </html>
+{
