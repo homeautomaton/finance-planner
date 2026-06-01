@@ -95,6 +95,12 @@ body {
     font-style:italic;
 }
 
+.field_itemized {
+    font-style:italic;
+    opacity:.6;
+    cursor:pointer;
+}
+
 input, textarea {
     background:#111;
     color:white;
@@ -232,6 +238,121 @@ canvas {
     margin-bottom:8px;
     color:#aaa;
 }
+
+.field_input_wrap {
+    position:relative;
+    flex:1;
+    display:flex;
+    align-items:center;
+}
+
+.field_input_wrap input {
+    flex:1;
+    padding-right:34px;
+}
+
+.scenario_button {
+    position:absolute;
+    right:4px;
+    top:50%;
+    transform:translate(-110%,-50%);
+
+    width:24px;
+    height:24px;
+
+    border:none;
+    border-radius:4px;
+
+    cursor:pointer;
+
+    font-weight:bold;
+    line-height:1;
+}
+
+.field_popup.has_scenarios input {
+    cursor:pointer;
+    background:#f3f3f3;
+}
+
+/* SCENARIO POP-UP */
+
+.scenario_popup_overlay {
+    position:fixed;
+    inset:0;
+
+    background:rgba(0,0,0,.35);
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    z-index:10000;
+}
+
+.scenario_popup {
+    width:min(800px, 95vw);
+    max-height:90vh;
+
+    overflow:auto;
+
+    background:#fff;
+    border-radius:10px;
+
+    padding:16px;
+
+    box-shadow:
+        0 10px 30px rgba(0,0,0,.25);
+}
+
+.scenario_popup_header {
+    font-size:20px;
+    font-weight:bold;
+
+    margin-bottom:16px;
+}
+
+.scenario_rows {
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+}
+
+.scenario_row {
+    display:grid;
+
+    grid-template-columns:
+        1.5fr
+        120px
+        1fr
+        40px;
+
+    gap:8px;
+}
+
+.scenario_row input {
+    width:100%;
+}
+
+.scenario_delete {
+    border:none;
+    border-radius:6px;
+
+    cursor:pointer;
+}
+
+.scenario_popup_buttons {
+    display:flex;
+    align-items:center;
+
+    gap:8px;
+
+    margin-top:16px;
+}
+
+.scenario_popup_spacer {
+    flex:1;
+}
+
 </style>
 </head>
 
@@ -344,19 +465,32 @@ canvas {
 
                 <div class="field field_popup">
                     <label for="editYearlyRaiseRate">Yearly Raise Rate</label>
-                    <input id="editYearlyRaiseRate" type="number" step=1>
+                    <input id="editYearlyRaiseRate" type="number" step=0.1>
                 </div>
 
                 <div class="field field_popup">
                     <label for="editYearlyInflationRate">Yearly Inflation Rate</label>
-                    <input id="editYearlyInflationRate" type="number" step=1>
+                    <div class="field_input_wrap">
+                        <input id="editYearlyInflationRate" type="number" step="0.1">
+                
+                        <button
+                            type="button"
+                            class="scenario_button"
+                            tabindex="-1">...</button>
+                    </div>
                 </div>
 
                 <h3>One-Time Events</h3>
 
                 <div class="field">
                     <label for="editWindfall">Windfall&nbsp;Income</label>
-                    <input id="editWindfall" type="number" step=100>
+                    <div class="field_input_wrap">
+                        <input id="editWindfall" type="number" step=100>
+                        <button
+                            type="button"
+                            class="scenario_button"
+                            tabindex="-1">...</button>
+                    </div>
                 </div>
 
                 <div class="field">
@@ -389,6 +523,23 @@ let clickStart = null;
 let movedDuringClick = false;
 let editingYear = null;
 let jsonDirty = false;
+
+
+function escapeHtml(text) {
+
+    return text.replace(
+        /[&<>"']/g,
+        char => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        })[char]
+    );
+}
+
+
 
 function getYearlyValue(data, year, scenarios) {
   const entry = data?.[year];
@@ -502,7 +653,7 @@ function render(){
     const dead = d.bal.some(v => v <= DEBT_LIMIT);
 
     const deathEl = document.getElementById("death");
-    console.log( JSON.stringify(d, null, 2) )
+    // console.log( JSON.stringify(d, null, 2) )
 
     deathEl.style.display = dead ? "flex" : "none";
 
@@ -699,56 +850,160 @@ help.onclick = (e) => {
 function openYearEditor(year){
 
     editingYear = year;
-    offset = editingYear - state.startYear
+
+    const offset =
+        year - state.startYear;
 
     editTitle.textContent =
         `${year} (Age ${year - state.birthYear})`;
 
-    editBalance.value =
-        state.balanceActuals[year] ?? "";
-    editBalance.placeholder = Math.round(bal[offset])
+    setEditorField(
+        editBalance,
+        state.balanceActuals?.[year],
+        Math.round(bal[offset])
+    );
 
-    editSalary.value =
-        state.salaryAdjustments[year] ?? "";
-    editSalary.placeholder =
+    setEditorField(
+        editSalary,
+        state.salaryAdjustments?.[year],
         Math.round(sal[offset])
+    );
 
-    editSpending.value =
-        state.spendingAdjustments[year] ?? "";
-    editSpending.placeholder =
+    setEditorField(
+        editSpending,
+        state.spendingAdjustments?.[year],
         Math.round(sp[offset])
+    );
 
-    editWindfall.value =
-        state.windfallIncome?.[year] ?? "";
-
-    editExpense.value =
-        state.plannedExpenses?.[year] ?? "";
-
-    editYearlyRaiseRate.value =
-        state.yearlyRaiseRate?.[year] ?? "";
-    editYearlyRaiseRate.placeholder =
+    setEditorField(
+        editYearlyRaiseRate,
+        state.yearlyRaiseRate?.[year],
         Math.round(yrr[offset])
+    );
 
-    editYearlyInflationRate.value =
-        state.yearlyInflationRate?.[year] ?? "";
-    editYearlyInflationRate.placeholder = 
+    setEditorField(
+        editYearlyInflationRate,
+        state.yearlyInflationRate?.[year],
         Math.round(yir[offset])
+    );
+
+    setEditorField(
+        editWindfall,
+        state.windfallIncome?.[year]
+    );
+
+    setEditorField(
+        editExpense,
+        state.plannedExpenses?.[year]
+    );
 
     editOverlay.style.display = "flex";
 }
+
+function setEditorField(
+    input,
+    storedValue,
+    normalPlaceholder = ""
+){
+
+    input.scenario_entries = null;
+
+    if (Array.isArray(storedValue)) {
+
+        input.scenario_entries =
+            structuredClone(storedValue);
+
+        input.value = "";
+        input.placeholder = "itemized";
+
+        input.readOnly = true;
+        input.classList.add(
+            "field_itemized"
+        );
+    }
+    else {
+
+        input.value =
+            storedValue ?? "";
+
+        input.placeholder =
+            normalPlaceholder;
+
+        input.readOnly = false;
+        input.classList.remove(
+            "field_itemized"
+        );
+    }
+}
+
+//function openYearEditor(year){
+//
+//    editingYear = year;
+//    offset = editingYear - state.startYear
+//
+//    editTitle.textContent =
+//        `${year} (Age ${year - state.birthYear})`;
+//
+//    editBalance.value =
+//        state.balanceActuals[year] ?? "";
+//    editBalance.placeholder = Math.round(bal[offset])
+//
+//    editSalary.value =
+//        state.salaryAdjustments[year] ?? "";
+//    editSalary.placeholder =
+//        Math.round(sal[offset])
+//
+//    editSpending.value =
+//        state.spendingAdjustments[year] ?? "";
+//    editSpending.placeholder =
+//        Math.round(sp[offset])
+//
+//    editYearlyRaiseRate.value =
+//        state.yearlyRaiseRate?.[year] ?? "";
+//    editYearlyRaiseRate.placeholder =
+//        Math.round(yrr[offset])
+//
+//    editYearlyInflationRate.value =
+//        state.yearlyInflationRate?.[year] ?? "";
+//    editYearlyInflationRate.placeholder = 
+//        Math.round(yir[offset])
+//
+//    editWindfall.value =
+//        state.windfallIncome?.[year] ?? "";
+//
+//    editExpense.value =
+//        state.plannedExpenses?.[year] ?? "";
+//
+//    editOverlay.style.display = "flex";
+//}
 
 function closeYearEditor(){
     editOverlay.style.display = "none";
 }
 
-function setOrDelete(obj, year, value){
+function setOrDelete(
+    obj,
+    year,
+    value,
+    entries = null
+){
 
-    if(value === "" || value == null){
+    const hasEntries =
+        Array.isArray(entries) &&
+        entries.length > 0;
+
+    if (
+        !hasEntries &&
+        (value === "" || value == null)
+    ){
         delete obj[year];
         return;
     }
 
-    obj[year] = Number(value);
+    obj[year] =
+        hasEntries
+            ? entries
+            : Number(value);
 }
 
 function hook(){
@@ -1102,7 +1357,8 @@ saveYear.onclick = ()=>{
     setOrDelete(
         state.yearlyInflationRate,
         year,
-        editYearlyInflationRate.value
+        editYearlyInflationRate.value,
+        editYearlyInflationRate.scenario_entries
     );
 
     closeYearEditor();
@@ -1183,6 +1439,235 @@ clearYear.onclick = ()=>{
     editYearlyInflationRate.value = ""
 };
 
+function refreshScenarioField(input) {
+    if (!input.dataset.originalValue)
+        input.dataset.originalValue = input.value;
+    if (!input.dataset.originalPlaceholder)
+        input.dataset.originalPlaceholder = input.placeholder;
+
+    const hasEntries =
+        (input.scenario_entries?.length ?? 0) > 0;
+
+    if (hasEntries) {
+
+        input.value = '';
+        input.placeholder = 'itemized';
+
+        input.readOnly = true;
+
+        input.classList.add(
+            'field_itemized'
+        );
+    }
+    else {
+        input.value =
+            input.dataset.originalValue ?? '';
+        input.placeholder = 
+            input.dataset.originalPlaceholder ?? '';
+
+        input.readOnly = false;
+
+        input.classList.remove(
+            'field_itemized'
+        );
+    }
+}
+
+function openScenarioPopup(input) {
+
+    const existing =
+        structuredClone(
+            input.scenario_entries ?? []
+        );
+
+    const overlay =
+        document.createElement('div');
+
+    overlay.className =
+        'scenario_popup_overlay';
+
+    overlay.innerHTML = `
+        <div class="scenario_popup">
+
+            <div class="scenario_popup_header">
+                Scenario Entries
+            </div>
+
+            <div class="scenario_rows"></div>
+
+            <div class="scenario_popup_buttons">
+
+                <button
+                    type="button"
+                    class="scenario_add_row"
+                >
+                    + Add Row
+                </button>
+
+                <div class="scenario_popup_spacer"></div>
+
+                <button
+                    type="button"
+                    class="scenario_cancel"
+                >
+                    Cancel
+                </button>
+
+                <button
+                    type="button"
+                    class="scenario_save"
+                >
+                    Save
+                </button>
+
+            </div>
+
+        </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const rowsContainer =
+        overlay.querySelector('.scenario_rows');
+
+    function addRow(data = {}) {
+
+        const row =
+            document.createElement('div');
+
+        row.className =
+            'scenario_row';
+
+        row.innerHTML = `
+            <input
+                class="scenario_name"
+                type="text"
+                placeholder="Name"
+                value="${escapeHtml(data.name ?? '')}"
+            >
+
+            <input
+                class="scenario_value"
+                type="number"
+                placeholder="Value"
+                value="${
+                    data.value != null
+                        ? data.value
+                        : ''
+                }"
+            >
+
+            <input
+                class="scenario_scenario"
+                type="text"
+                placeholder="Scenario (optional)"
+                value="${escapeHtml(data.scenario ?? '')}"
+            >
+
+            <button
+                type="button"
+                class="scenario_delete"
+            >
+                ✕
+            </button>
+        `;
+
+        rowsContainer.appendChild(row);
+
+        row.querySelector('.scenario_delete')
+           .addEventListener('click', () => {
+
+                row.remove();
+           });
+    }
+
+    if (existing.length)
+        existing.forEach(addRow);
+    else
+        addRow();
+
+    overlay.querySelector('.scenario_add_row')
+           .addEventListener('click', () => {
+
+                addRow();
+           });
+
+    overlay.querySelector('.scenario_cancel')
+           .addEventListener('click', () => {
+
+                overlay.remove();
+           });
+
+    overlay.querySelector('.scenario_save')
+           .addEventListener('click', () => {
+
+                const entries = [];
+
+                rowsContainer
+                    .querySelectorAll('.scenario_row')
+                    .forEach(row => {
+
+                        const name =
+                            row.querySelector(
+                                '.scenario_name'
+                            ).value.trim();
+
+                        const valueText =
+                            row.querySelector(
+                                '.scenario_value'
+                            ).value.trim();
+
+                        const scenario =
+                            row.querySelector(
+                                '.scenario_scenario'
+                            ).value.trim();
+
+                        if (
+                            !name &&
+                            !valueText &&
+                            !scenario
+                        )
+                            return;
+
+                        entries.push({
+                            name,
+                            value:
+                                valueText === ''
+                                    ? null
+                                    : Number(valueText),
+                            ...(scenario
+                                ? {scenario}
+                                : {})
+                        });
+                    });
+                input.scenario_entries = entries;
+                refreshScenarioField(input);
+
+                overlay.remove();
+           });
+}
+
+document.addEventListener('click', e => {
+
+    const button =
+        e.target.closest('.scenario_button');
+
+    const scenarioInput =
+        e.target.closest(
+            '.field_popup.has_scenarios input'
+        );
+
+    if (!button && !scenarioInput)
+        return;
+
+    const input =
+        scenarioInput ??
+        button.closest('.field_input_wrap')
+              .querySelector('input');
+
+    openScenarioPopup(input);
+});
+
 cancelYear.onclick = () => {
     closeYearEditor();
 };
@@ -1226,4 +1711,3 @@ render();
 
 </body>
 </html>
-{
