@@ -251,7 +251,7 @@ canvas {
     padding-right:34px;
 }
 
-.scenario_button {
+.itemized_button {
     position:absolute;
     right:4px;
     top:50%;
@@ -269,7 +269,7 @@ canvas {
     line-height:1;
 }
 
-.field_popup.has_scenarios input {
+.field_popup.is_itemized input {
     cursor:pointer;
     background:#f3f3f3;
 }
@@ -289,8 +289,23 @@ canvas {
     z-index:10000;
 }
 
-.scenario_popup {
+.itemize_popup {
     width:min(800px, 95vw);
+    max-height:90vh;
+
+    overflow:auto;
+
+    background:#fff;
+    border-radius:10px;
+
+    padding:16px;
+
+    box-shadow:
+        0 10px 30px rgba(0,0,0,.25);
+}
+
+.scenario_popup {
+    width:min(400px, 95vw);
     max-height:90vh;
 
     overflow:auto;
@@ -311,13 +326,13 @@ canvas {
     margin-bottom:16px;
 }
 
-.scenario_rows {
+.itemize_rows {
     display:flex;
     flex-direction:column;
     gap:8px;
 }
 
-.scenario_row {
+.itemize_row {
     display:grid;
 
     grid-template-columns:
@@ -329,11 +344,11 @@ canvas {
     gap:8px;
 }
 
-.scenario_row input {
+.itemize_row input {
     width:100%;
 }
 
-.scenario_delete {
+.itemize_delete {
     border:none;
     border-radius:6px;
 
@@ -351,6 +366,19 @@ canvas {
 
 .scenario_popup_spacer {
     flex:1;
+}
+
+.scenario_list {
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    margin:12px 0;
+}
+
+.scenario_checkbox_row {
+    display:flex;
+    align-items:center;
+    gap:8px;
 }
 
 </style>
@@ -402,7 +430,12 @@ canvas {
 
     <input type="file" id="fileInput" accept="application/json" style="display:none;">
 
-    <h3>Scenarios</h3>
+    <h3>
+        <a href="#"
+           id="editScenariosLink" style="color:#ffffff;">
+            Scenarios
+        </a>
+    </h3>
     <textarea id="json"></textarea>
 </div>
 
@@ -450,52 +483,60 @@ canvas {
 
                 <div class="field field_popup">
                     <label for="editBalance">Balance</label>
-                    <input id="editBalance" type="number" step=100>
+                    <div class="field_input_wrap">
+                        <input id="editBalance" type="number" step="1000">
+                        <button type="button" class="itemized_button" tabindex="-1">...</button>
+                    </div>
                 </div>
 
                 <div class="field field_popup">
                     <label for="editSalary">Salary</label>
-                    <input id="editSalary" type="number" step=100>
+                    <div class="field_input_wrap">
+                        <input id="editSalary" type="number" step="1000">
+                        <button type="button" class="itemized_button" tabindex="-1">...</button>
+                    </div>
                 </div>
 
                 <div class="field field_popup">
                     <label for="editSpending">Spending</label>
-                    <input id="editSpending" type="number" step=100>
+                    <div class="field_input_wrap">
+                        <input id="editSpending" type="number" step="1000">
+                        <button type="button" class="itemized_button" tabindex="-1">...</button>
+                    </div>
                 </div>
 
                 <div class="field field_popup">
                     <label for="editYearlyRaiseRate">Yearly Raise Rate</label>
-                    <input id="editYearlyRaiseRate" type="number" step=0.1>
+                    <div class="field_input_wrap">
+                        <input id="editYearlyRaiseRate" type="number" step="0.1">
+                        <button type="button" class="itemized_button" tabindex="-1">...</button>
+                    </div>
                 </div>
 
                 <div class="field field_popup">
                     <label for="editYearlyInflationRate">Yearly Inflation Rate</label>
                     <div class="field_input_wrap">
                         <input id="editYearlyInflationRate" type="number" step="0.1">
-                
-                        <button
-                            type="button"
-                            class="scenario_button"
-                            tabindex="-1">...</button>
+                        <button type="button" class="itemized_button" tabindex="-1">...</button>
                     </div>
                 </div>
 
                 <h3>One-Time Events</h3>
 
-                <div class="field">
+                <div class="field field_popup">
                     <label for="editWindfall">Windfall&nbsp;Income</label>
                     <div class="field_input_wrap">
-                        <input id="editWindfall" type="number" step=100>
-                        <button
-                            type="button"
-                            class="scenario_button"
-                            tabindex="-1">...</button>
+                        <input id="editWindfall" type="number" step=1000>
+                        <button type="button" class="itemized_button" tabindex="-1">...</button>
                     </div>
                 </div>
 
-                <div class="field">
+                <div class="field field_popup">
                     <label for="editExpense">Planned&nbsp;Expense</label>
-                    <input id="editExpense" type="number" step=100>
+                    <div class="field_input_wrap">
+                        <input id="editExpense" type="number" step="1000">
+                        <button type="button" class="itemized_button" tabindex="-1">...</button>
+                    </div>
                 </div>
 
                 <div class="buttonRow">
@@ -878,13 +919,13 @@ function openYearEditor(year){
     setEditorField(
         editYearlyRaiseRate,
         state.yearlyRaiseRate?.[year],
-        Math.round(yrr[offset])
+        Math.round(yrr[offset]*100) / 100
     );
 
     setEditorField(
         editYearlyInflationRate,
         state.yearlyInflationRate?.[year],
-        Math.round(yir[offset])
+        Math.round(yir[offset]*100) / 100
     );
 
     setEditorField(
@@ -906,11 +947,11 @@ function setEditorField(
     normalPlaceholder = ""
 ){
 
-    input.scenario_entries = null;
+    input.itemize_entries = null;
 
     if (Array.isArray(storedValue)) {
 
-        input.scenario_entries =
+        input.itemize_entries =
             structuredClone(storedValue);
 
         input.value = "";
@@ -935,47 +976,6 @@ function setEditorField(
         );
     }
 }
-
-//function openYearEditor(year){
-//
-//    editingYear = year;
-//    offset = editingYear - state.startYear
-//
-//    editTitle.textContent =
-//        `${year} (Age ${year - state.birthYear})`;
-//
-//    editBalance.value =
-//        state.balanceActuals[year] ?? "";
-//    editBalance.placeholder = Math.round(bal[offset])
-//
-//    editSalary.value =
-//        state.salaryAdjustments[year] ?? "";
-//    editSalary.placeholder =
-//        Math.round(sal[offset])
-//
-//    editSpending.value =
-//        state.spendingAdjustments[year] ?? "";
-//    editSpending.placeholder =
-//        Math.round(sp[offset])
-//
-//    editYearlyRaiseRate.value =
-//        state.yearlyRaiseRate?.[year] ?? "";
-//    editYearlyRaiseRate.placeholder =
-//        Math.round(yrr[offset])
-//
-//    editYearlyInflationRate.value =
-//        state.yearlyInflationRate?.[year] ?? "";
-//    editYearlyInflationRate.placeholder = 
-//        Math.round(yir[offset])
-//
-//    editWindfall.value =
-//        state.windfallIncome?.[year] ?? "";
-//
-//    editExpense.value =
-//        state.plannedExpenses?.[year] ?? "";
-//
-//    editOverlay.style.display = "flex";
-//}
 
 function closeYearEditor(){
     editOverlay.style.display = "none";
@@ -1321,44 +1321,50 @@ saveYear.onclick = ()=>{
     setOrDelete(
         state.balanceActuals,
         year,
-        editBalance.value
+        editBalance.value,
+        editBalance.itemize_entries
     );
 
     setOrDelete(
         state.salaryAdjustments,
         year,
-        editSalary.value
+        editSalary.value,
+        editSalary.itemize_entries
     );
 
     setOrDelete(
         state.spendingAdjustments,
         year,
-        editSpending.value
+        editSpending.value,
+        editSpending.itemize_entries
     );
 
     setOrDelete(
         state.windfallIncome,
         year,
-        editWindfall.value
+        editWindfall.value,
+        editWindfall.itemize_entries
     );
 
     setOrDelete(
         state.plannedExpenses,
         year,
-        editExpense.value
+        editExpense.value,
+        editExpense.itemize_entries
     );
 
     setOrDelete(
         state.yearlyRaiseRate,
         year,
-        editYearlyRaiseRate.value
+        editYearlyRaiseRate.value,
+        editYearlyRaiseRate.itemize_entries
     );
 
     setOrDelete(
         state.yearlyInflationRate,
         year,
         editYearlyInflationRate.value,
-        editYearlyInflationRate.scenario_entries
+        editYearlyInflationRate.itemize_entries
     );
 
     closeYearEditor();
@@ -1439,14 +1445,45 @@ clearYear.onclick = ()=>{
     editYearlyInflationRate.value = ""
 };
 
-function refreshScenarioField(input) {
+let frozenYAxis = null;
+
+function freezeYAxis(chart) {
+
+    const y =
+        chart.scales.y;
+
+    frozenYAxis = {
+        min: y.min,
+        max: y.max
+    };
+
+    chart.options.scales.y.min =
+        frozenYAxis.min;
+
+    chart.options.scales.y.max =
+        frozenYAxis.max;
+
+    chart.update();
+}
+
+function unfreezeYAxis(chart) {
+
+    frozenYAxis = null;
+
+    delete chart.options.scales.y.min;
+    delete chart.options.scales.y.max;
+
+    chart.update();
+}
+
+function refreshItemizeField(input) {
     if (!input.dataset.originalValue)
         input.dataset.originalValue = input.value;
     if (!input.dataset.originalPlaceholder)
         input.dataset.originalPlaceholder = input.placeholder;
 
     const hasEntries =
-        (input.scenario_entries?.length ?? 0) > 0;
+        (input.itemize_entries?.length ?? 0) > 0;
 
     if (hasEntries) {
 
@@ -1473,11 +1510,57 @@ function refreshScenarioField(input) {
     }
 }
 
-function openScenarioPopup(input) {
+function getAllScenarios() {
+
+    const scenarios =
+        new Set(
+            state.scenarios ?? []
+        );
+
+    function walk(value) {
+
+        if (Array.isArray(value)) {
+
+            for (const item of value) {
+
+                if (
+                    item &&
+                    typeof item === "object" &&
+                    item.scenario
+                ) {
+                    scenarios.add(
+                        item.scenario
+                    );
+                }
+
+                walk(item);
+            }
+
+            return;
+        }
+
+        if (
+            value &&
+            typeof value === "object"
+        ) {
+            Object.values(value)
+                .forEach(walk);
+        }
+    }
+
+    walk(state);
+
+    return [...scenarios]
+        .sort((a, b) =>
+            a.localeCompare(b)
+        );
+}
+
+function openItemizedPopup(input) {
 
     const existing =
         structuredClone(
-            input.scenario_entries ?? []
+            input.itemize_entries ?? []
         );
 
     const overlay =
@@ -1487,19 +1570,19 @@ function openScenarioPopup(input) {
         'scenario_popup_overlay';
 
     overlay.innerHTML = `
-        <div class="scenario_popup">
+        <div class="itemize_popup">
 
             <div class="scenario_popup_header">
                 Scenario Entries
             </div>
 
-            <div class="scenario_rows"></div>
+            <div class="itemize_rows"></div>
 
             <div class="scenario_popup_buttons">
 
                 <button
                     type="button"
-                    class="scenario_add_row"
+                    class="itemize_add_row"
                 >
                     + Add Row
                 </button>
@@ -1528,7 +1611,7 @@ function openScenarioPopup(input) {
     document.body.appendChild(overlay);
 
     const rowsContainer =
-        overlay.querySelector('.scenario_rows');
+        overlay.querySelector('.itemize_rows');
 
     function addRow(data = {}) {
 
@@ -1536,18 +1619,18 @@ function openScenarioPopup(input) {
             document.createElement('div');
 
         row.className =
-            'scenario_row';
+            'itemize_row';
 
         row.innerHTML = `
             <input
-                class="scenario_name"
+                class="itemize_name"
                 type="text"
                 placeholder="Name"
                 value="${escapeHtml(data.name ?? '')}"
             >
 
             <input
-                class="scenario_value"
+                class="itemize_value"
                 type="number"
                 placeholder="Value"
                 value="${
@@ -1558,7 +1641,7 @@ function openScenarioPopup(input) {
             >
 
             <input
-                class="scenario_scenario"
+                class="itemize_scenario"
                 type="text"
                 placeholder="Scenario (optional)"
                 value="${escapeHtml(data.scenario ?? '')}"
@@ -1566,7 +1649,7 @@ function openScenarioPopup(input) {
 
             <button
                 type="button"
-                class="scenario_delete"
+                class="itemize_delete"
             >
                 ✕
             </button>
@@ -1574,7 +1657,7 @@ function openScenarioPopup(input) {
 
         rowsContainer.appendChild(row);
 
-        row.querySelector('.scenario_delete')
+        row.querySelector('.itemize_delete')
            .addEventListener('click', () => {
 
                 row.remove();
@@ -1586,7 +1669,7 @@ function openScenarioPopup(input) {
     else
         addRow();
 
-    overlay.querySelector('.scenario_add_row')
+    overlay.querySelector('.itemize_add_row')
            .addEventListener('click', () => {
 
                 addRow();
@@ -1604,22 +1687,22 @@ function openScenarioPopup(input) {
                 const entries = [];
 
                 rowsContainer
-                    .querySelectorAll('.scenario_row')
+                    .querySelectorAll('.itemize_row')
                     .forEach(row => {
 
                         const name =
                             row.querySelector(
-                                '.scenario_name'
+                                '.itemize_name'
                             ).value.trim();
 
                         const valueText =
                             row.querySelector(
-                                '.scenario_value'
+                                '.itemize_value'
                             ).value.trim();
 
                         const scenario =
                             row.querySelector(
-                                '.scenario_scenario'
+                                '.itemize_scenario'
                             ).value.trim();
 
                         if (
@@ -1640,8 +1723,8 @@ function openScenarioPopup(input) {
                                 : {})
                         });
                     });
-                input.scenario_entries = entries;
-                refreshScenarioField(input);
+                input.itemize_entries = entries;
+                refreshItemizeField(input);
 
                 overlay.remove();
            });
@@ -1650,22 +1733,22 @@ function openScenarioPopup(input) {
 document.addEventListener('click', e => {
 
     const button =
-        e.target.closest('.scenario_button');
+        e.target.closest('.itemized_button');
 
-    const scenarioInput =
+    const itemizeInput =
         e.target.closest(
-            '.field_popup.has_scenarios input'
+            '.field_popup.is_itemized input'
         );
 
-    if (!button && !scenarioInput)
+    if (!button && !itemizeInput)
         return;
 
     const input =
-        scenarioInput ??
+        itemizeInput ??
         button.closest('.field_input_wrap')
               .querySelector('input');
 
-    openScenarioPopup(input);
+    openItemizedPopup(input);
 });
 
 cancelYear.onclick = () => {
@@ -1704,6 +1787,179 @@ jsonEl.addEventListener("focus", () => {
 jsonEl.addEventListener("blur", () => {
     // leave dirty until Apply is pressed
 });
+
+document
+    .getElementById(
+        "editScenariosLink"
+    )
+    .addEventListener(
+        "click",
+        e => {
+
+            e.preventDefault();
+            openScenariosPopup();
+        }
+    );
+
+function openScenariosPopup() {
+
+    freezeYAxis(chart);
+    const original =
+        structuredClone(
+            state.scenarios ?? []
+        );
+
+    const overlay =
+        document.createElement("div");
+
+    overlay.className =
+        "scenario_popup_overlay";
+
+    document.body.appendChild(
+        overlay
+    );
+
+    function scenarioPopup() {
+
+        const allScenarios =
+            getAllScenarios();
+
+        overlay.innerHTML = `
+            <div class="scenario_popup">
+
+                <div
+                    class="scenario_popup_header"
+                >
+                    Active Scenarios
+                </div>
+
+                <div
+                    class="scenario_list"
+                >
+                    ${
+                        allScenarios
+                            .map(
+                                scenario => `
+                            <label
+                                class="scenario_checkbox_row"
+                            >
+                                <input
+                                    type="checkbox"
+                                    data-scenario="${scenario}"
+                                    ${
+                                        state.scenarios?.includes(
+                                            scenario
+                                        )
+                                            ? "checked"
+                                            : ""
+                                    }
+                                >
+                                ${scenario}
+                            </label>
+                        `
+                            )
+                            .join("")
+                    }
+                </div>
+
+                <div
+                    class="scenario_popup_buttons"
+                >
+
+                    <button
+                        class="scenario_cancel"
+                    >
+                        Cancel
+                    </button>
+
+                    <div
+                        class="scenario_popup_spacer"
+                    ></div>
+
+                    <button
+                        class="scenario_save"
+                    >
+                        Save
+                    </button>
+
+                </div>
+
+            </div>
+        `;
+
+        overlay
+            .querySelectorAll(
+                '[data-scenario]'
+            )
+            .forEach(
+                checkbox => {
+
+                    checkbox
+                        .addEventListener(
+                            "change",
+                            () => {
+
+                                const name =
+                                    checkbox.dataset.scenario;
+
+                                const active =
+                                    new Set(
+                                        state.scenarios ??
+                                        []
+                                    );
+
+                                if (
+                                    checkbox.checked
+                                ) {
+                                    active.add(
+                                        name
+                                    );
+                                }
+                                else {
+                                    active.delete(
+                                        name
+                                    );
+                                }
+
+                                state.scenarios =
+                                    [...active]
+                                        .sort();
+                                render();
+                            }
+                        );
+                }
+            );
+
+        overlay
+            .querySelector(
+                ".scenario_cancel"
+            )
+            .onclick = () => {
+
+                state.scenarios =
+                    original;
+
+                overlay.remove();
+
+                scenarioPopup();
+                unfreezeYAxis(chart);
+            };
+
+        overlay
+            .querySelector(
+                ".scenario_save"
+            )
+            .onclick = () => {
+
+                overlay.remove();
+
+                scenarioPopup();
+                unfreezeYAxis(chart);
+            };
+    }
+
+    scenarioPopup();
+}
 
 render();
 
