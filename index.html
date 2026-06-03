@@ -308,10 +308,9 @@ canvas {
     width:min(400px, 95vw);
     max-height:90vh;
 
-    overflow:auto;
-
-    background:#fff;
+    background:#000;
     border-radius:10px;
+    fonct-color:black;
 
     padding:16px;
 
@@ -627,26 +626,29 @@ function getYearlyValue(data, year, scenarios) {
 function y(v){return Number(v)}
 
 labels=[], bal=[], sal=[], sp=[], yrr=[], yir=[];
+let terminalPeakYear = null;
+let peakAge = null;
+let depletionYear = null;
+let depletionAge = null;
 
 function build() {
 
     let salary = state.startingSalary;
     let spend = state.startingSpending;
     let balance = state.startingBalance;
+    let prior_balance = state.startingBalance;
     let raiseRate = state.raiseRate;
     let inflationRate = state.inflationRate;
     labels=[], bal=[], sal=[], sp=[], yrr=[], yir=[];
 
     const years = state.years;
 
-    for(let i=0;i<years;i++){
+    for(let i=0;i<Math.max(years,100);i++){
 
         const year = state.startYear + i;
         const age = year - state.birthYear;
 
-        labels.push(`${year} (Age ${age})`);
-
-        if ( i > 0 ) {
+        if ( i >= 0 ) {
             adj = getYearlyValue( state.salaryAdjustments, year, state.scenarios );
             if ( adj !== null ) salary = adj;
 
@@ -659,8 +661,22 @@ function build() {
             adj = getYearlyValue( state.windfallIncome, year, state.scenarios );
             if ( adj !== null ) balance += adj;
 
+            prior_balance = balance
+
             balance = balance*(1+state.returnRate/100)
                     + salary - spend;
+
+            if ( depletionYear == null && balance <  0 )
+                depletionYear = year;
+
+            if ( balance > 0 ) depletionYear = null;
+
+            if ( depletionYear )
+                depletionAge = depletionYear - state.birthYear;
+            else
+                depletionAge = null;
+
+            balance = Math.max(DEBT_LIMIT,balance);
 
             adj = getYearlyValue( state.balanceActuals, year, state.scenarios );
             if ( adj !== null ) balance = adj;
@@ -671,14 +687,25 @@ function build() {
             adj = getYearlyValue( state.yearlyInflationRate, year, state.scenarios );
             if ( adj !== null ) inflationRate = adj;
 
-            balance = Math.max(DEBT_LIMIT,balance);
+            if ( terminalPeakYear == null && balance < prior_balance )
+                terminalPeakYear = year - 1;
+            if ( balance > prior_balance )
+                terminalPeakYear = null;
+            if ( terminalPeakYear )
+                peakAge = terminalPeakYear - state.birthYear;
+            else
+                peakAge = null;
 
         }
-        sal.push(salary);
-        sp.push(spend);
-        bal.push(balance);
-        yrr.push(raiseRate);
-        yir.push(inflationRate);
+        if ( i < years ) {
+            labels.push(`${year} (Age ${age})`);
+
+            sal.push(salary);
+            sp.push(spend);
+            bal.push(balance);
+            yrr.push(raiseRate);
+            yir.push(inflationRate);
+        }
 
         salary *= (1+(raiseRate)/100);
         spend *= (1+inflationRate/100);
@@ -794,6 +821,12 @@ function render(){
                 interaction:{intersect:false},
 
                 plugins:{
+                    chartSummary: {
+                        terminalPeak:
+                            terminalPeakYear,
+                        depletionYear:
+                            depletionYear
+                    },
                     tooltip:{
                         callbacks:{
                             label(ctx){
@@ -1960,6 +1993,112 @@ function openScenariosPopup() {
 
     scenarioPopup();
 }
+
+const chartSummaryPlugin = {
+
+    id: 'chartSummary',
+
+    afterDraw(chart) {
+
+        const lines = [];
+
+        if (terminalPeakYear != null)
+            lines.push(
+                `Savings draw-down: ${terminalPeakYear} (${peakAge})`
+            );
+
+        if (depletionYear != null)
+            lines.push(
+                `Broke: ${depletionYear} (${depletionAge})`
+            );
+
+        if (!lines.length)
+            return;
+
+        const {
+            ctx,
+            chartArea
+        } = chart;
+
+        ctx.save();
+
+        ctx.font =
+            '12px sans-serif';
+
+        const padding = 8;
+        const lineHeight = 16;
+
+        const width =
+            Math.max(
+                ...lines.map(
+                    line =>
+                        ctx.measureText(line)
+                           .width
+                )
+            ) +
+            padding * 2;
+
+        const height =
+            lines.length *
+            lineHeight +
+            padding * 2;
+
+        const x =
+            chartArea.right -
+            width -
+            10;
+
+        const y =
+            chartArea.top +
+            10;
+
+        ctx.fillStyle =
+            'rgba(255,255,255,.9)';
+
+        ctx.strokeStyle =
+            '#ccc';
+
+        ctx.lineWidth = 1;
+
+        ctx.fillRect(
+            x,
+            y,
+            width,
+            height
+        );
+
+        ctx.strokeRect(
+            x,
+            y,
+            width,
+            height
+        );
+
+        ctx.fillStyle =
+            '#000';
+
+        lines.forEach(
+            (line, i) => {
+
+                ctx.fillText(
+                    line,
+                    x + padding,
+                    y +
+                    padding +
+                    (i + 1) *
+                    lineHeight -
+                    4
+                );
+            }
+        );
+
+        ctx.restore();
+    }
+};
+
+Chart.register(
+    chartSummaryPlugin
+);
 
 render();
 
